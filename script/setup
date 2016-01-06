@@ -1,0 +1,44 @@
+#!/bin/bash -x
+
+[ -z "$ID" ] && export ID='001'
+[ -z "$SLEEP" ] && export SLEEP=5
+[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
+[ -z "$DNSMASQ_DIR" ] && export DNSMASQ_DIR="$WORKING_DIR/../docker-dnsmasq"
+[ -z "$EUREKA_HOSTS" ] && export EUREKA_HOSTS='a b c'
+[ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
+
+# create exhibitor + dns host
+docker-machine create --driver vmwarefusion \
+	--vmwarefusion-no-share --vmwarefusion-disk-size 5000 --vmwarefusion-memory-size 1024 \
+	"service$ID"
+sleep ${SLEEP}
+eval $(docker-machine env "service$ID")
+docker $(docker-machine config "service$ID") run -d -p 8181:8181 -p 2181:2181 -p 2888:2888 -p 3888:3888 \
+	-h exhibitor.local --name exhibitor.local -e HOSTNAME=exhibitor.local mbabineau/zookeeper-exhibitor:latest
+
+cd "$DNSMASQ_DIR" && \
+docker build -t danigiri/docker-dnsmasq .
+
+cd "$WORKING_DIR"/dnsmasq-eureka1 && \
+docker build -t dnsmasq-eureka .
+
+
+# create eureka hosts, we need to start exhibitor so the network can register the hosts
+cluster_store="cluster-store=zk://$(docker-machine ip service$ID):2181"
+for i in $EUREKA_HOSTS; do
+	docker-machine create --driver vmwarefusion \
+		--vmwarefusion-no-share --vmwarefusion-disk-size 5000 --vmwarefusion-memory-size 1024 \
+		--engine-opt="cluster-advertise=eth0:2376" --engine-opt="$cluster_store" \
+		"eureka${ID}${i}"
+	sleep ${SLEEP}
+done
+
+# create a network (name can be anything you like) from any of the hosts
+any_network_=$(echo "$EUREKA_HOSTS" | awk '{print $1}')
+eval $(docker-machine env "eureka$ID$any_network_")
+docker network create --driver overlay --subnet="$SUBNET" "eureka$ID"
+
+cd "$WORKING_DIR"/eureka1
+for i in $EUREKA_HOSTS; do
+	eval $(docker-machine env "eureka$ID$i") && docker build -t docker-eureka .
+done

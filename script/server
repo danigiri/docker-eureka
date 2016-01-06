@@ -1,0 +1,22 @@
+#!/bin/bash -x
+
+[ -z "$ID" ] && export ID=001
+[ -z "$SLEEP" ] && export SLEEP=5
+[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
+[ -z "$EUREKA_ZONES" ] && export EUREKA_ZONES='a b c'
+[ -z "$EUREKA_HOSTNAMES" ] && export EUREKA_HOSTNAMES='10-10-0-2.zone-a.eureka.local 10-10-0-3.zone-b.eureka.local 10-10-0-4.zone-c.eureka.local'
+[ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
+
+eval $(docker-machine env "service$ID")  && \
+docker run -d --name 'dnsmasq.local' -p 53:53 -p 53:53/udp --cap-add=NET_BIND_SERVICE --cap-add=NET_ADMIN --cap-add=NET_RAW \
+	dnsmasq-eureka /etc/dnsmasq.conf -i eth0 -i eth1 -8 -
+	
+h_=1
+for i in $EUREKA_HOSTS; do
+	hostname_=$(echo "$EUREKA_HOSTNAMES"|awk '{print $'$h_'}')
+	eval $(docker-machine env "eureka${ID}$i") && \
+	docker run -d -h "$hostname_" --name "$hostname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "808$h_":8080 docker-eureka
+	let "h_++"
+done
+#eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-3.zone-b.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
+#eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-4.zone-c.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
