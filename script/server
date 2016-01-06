@@ -15,7 +15,7 @@ h_=1
 for i in $EUREKA_HOSTS; do
 	hostname_=$(echo "$EUREKA_HOSTNAMES"|awk '{print $'$h_'}')
 	eval $(docker-machine env "eureka${ID}$i") && \
-	docker run -d -h "$hostname_" --name "$hostname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "808$h_":8080 docker-eureka
+	docker run -d -h "$hostname_" --name "$hostname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "8080":8080 docker-eureka
 	let "h_++"
 done
 #eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-3.zone-b.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
