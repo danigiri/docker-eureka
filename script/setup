@@ -1,5 +1,6 @@
 #!/bin/bash -x
 
+#DRIVER_OPTS=${DRIVER_OPTS:-'--driver vmwarefusion --vmwarefusion-no-share --vmwarefusion-disk-size 2000 --vmwarefusion-memory-size 512'}
 DRIVER_OPTS=${DRIVER_OPTS:-'--driver virtualbox --virtualbox-no-share --virtualbox-disk-size 2000 --virtualbox-memory 1024'}
 [ -z "$ID" ] && export ID='001'
 [ -z "$SLEEP" ] && export SLEEP=5
