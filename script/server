@@ -12,11 +12,14 @@ docker run -d --name 'dnsmasq.local' -p 53:53 -p 53:53/udp --cap-add=NET_BIND_SE
 	dnsmasq-eureka /etc/dnsmasq.conf -i eth0 -i eth1 -8 -
 	
 h_=1
-for i in $EUREKA_HOSTS; do
-	hostname_=$(echo "$EUREKA_HOSTNAMES"|awk '{print $'$h_'}')
+for i in $EUREKA_ZONES; do
+	hostname_=$(echo "$EUREKA_HOSTNAMES" | awk '{print $'$h_'}')
 	eval $(docker-machine env "eureka${ID}$i") && \
 	docker run -d -h "$hostname_" --name "$hostname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "8080":8080 docker-eureka
 	let "h_++"
 done
+
 #eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-3.zone-b.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
 #eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-4.zone-c.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
+
+#for i in a b c; do eval $(docker-machine env eureka001$i) && docker stop $(docker ps -q); done
