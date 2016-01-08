@@ -3,10 +3,10 @@
 #DRIVER_OPTS=${DRIVER_OPTS:-'--driver vmwarefusion --vmwarefusion-no-share --vmwarefusion-disk-size 2000 --vmwarefusion-memory-size 512'}
 DRIVER_OPTS=${DRIVER_OPTS:-'--driver virtualbox --virtualbox-no-share --virtualbox-disk-size 2000 --virtualbox-memory 1024'}
 [ -z "$ID" ] && export ID='001'
-[ -z "$SLEEP" ] && export SLEEP=5
-[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
-[ -z "$DNSMASQ_DIR" ] && export DNSMASQ_DIR="$WORKING_DIR/../docker-dnsmasq"
-[ -z "$EUREKA_HOSTS" ] && export EUREKA_HOSTS='a b c'
+[ -z "$SLEEP" ] && export SLEEP=1
+[ -z "$WORKING_DIR" ] && WORKING_DIR=$(pwd)
+[ -z "$DNSMASQ_DIR" ] && DNSMASQ_DIR="$WORKING_DIR/../docker-dnsmasq"
+[ -z "$EUREKA_HOSTS" ] && EUREKA_HOSTS='a b c d'
 [ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
 
 
@@ -28,8 +28,9 @@ docker build -t dnsmasq-eureka .
 cluster_store="cluster-store=zk://$(docker-machine ip service$ID):2181"
 for i in $EUREKA_HOSTS; do
 	docker-machine create $DRIVER_OPTS \
-		--engine-opt="cluster-advertise=eth0:2376" --engine-opt="$cluster_store" \
+		--engine-opt="cluster-advertise=eth1:2376" --engine-opt="$cluster_store" \
 		"eureka${ID}${i}"
+#		echo "kill `more /var/run/udhcpc.eth1.pid`\nifconfig eth1 192.168.99.50 netmask 255.255.255.0 broadcast 192.168.99.255 up" | docker-machine ssh prova-discovery sudo tee /var/lib/boot2docker/bootsync.sh > /dev/null
 	sleep ${SLEEP}
 done
 
