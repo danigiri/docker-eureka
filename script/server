@@ -4,7 +4,7 @@
 [ -z "$SLEEP" ] && export SLEEP=5
 [ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
 [ -z "$EUREKA_ZONES" ] && export EUREKA_ZONES='a b c' 
-[ -z "$EUREKA_HOSTNAMES" ] && export EUREKA_HOSTNAMES='10-10-0-2.zone-a.eureka.local 10-10-0-3.zone-b.eureka.local 10-10-0-4.zone-c.eureka.local'
+[ -z "$EUREKA_CNAMES" ] && export EUREKA_CNAMES='10-10-0-2.eureka.docker 10-10-0-3.eureka.docker 10-10-0-4.eureka.docker'
 [ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
 
 echo '**** Creating DNS service ****'
@@ -15,9 +15,9 @@ docker run -d --name 'dnsmasq.local' -p 53:53 -p 53:53/udp --cap-add=NET_BIND_SE
 any_network_=$(echo "$EUREKA_ZONES" | awk '{print $1}')
 h_=1
 for i in $EUREKA_ZONES; do
-	hostname_=$(echo "$EUREKA_HOSTNAMES"|awk '{print $'$h_'}')
+	cname_=$(echo "$EUREKA_CNAMES"|awk '{print $'$h_'}')
 	eval $(docker-machine env "eureka${ID}$i") && \
-	docker run -d -h "$hostname_" --name "$hostname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "808$h_":8080 docker-eureka
+	docker run -d -h "$cname_" --name "$cname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "808$h_":8080 docker-eureka
 	let "h_++"
 done
 
