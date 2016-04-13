@@ -6,7 +6,7 @@ DRIVER_OPTS=${DRIVER_OPTS:-'--driver virtualbox --virtualbox-no-share --virtualb
 [ -z "$SLEEP" ] && export SLEEP=1
 [ -z "$WORKING_DIR" ] && WORKING_DIR=$(pwd)
 [ -z "$DNSMASQ_DIR" ] && DNSMASQ_DIR="$WORKING_DIR/../docker-dnsmasq"
-[ -z "$EUREKA_HOSTS" ] && EUREKA_HOSTS='a b c d'
+[ -z "$EUREKA_HOSTS" ] && EUREKA_HOSTS='a b c'
 [ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
 
 

@@ -3,8 +3,8 @@
 [ -z "$ID" ] && export ID=001
 [ -z "$SLEEP" ] && export SLEEP=5
 [ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
-[ -z "$EUREKA_ZONES" ] && export EUREKA_ZONES='a b c d'
-[ -z "$EUREKA_HOSTNAMES" ] && export EUREKA_HOSTNAMES='10-10-0-2.zone-a.eureka.local 10-10-0-3.zone-b.eureka.local 10-10-0-4.zone-c.eureka.local 10-10-0-5.zone-c.eureka.local'
+[ -z "$EUREKA_ZONES" ] && export EUREKA_ZONES='a b c' 
+[ -z "$EUREKA_HOSTNAMES" ] && export EUREKA_HOSTNAMES='10-10-0-2.zone-a.eureka.local 10-10-0-3.zone-b.eureka.local 10-10-0-4.zone-c.eureka.local'
 [ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
 
 echo '**** Creating DNS service ****'
