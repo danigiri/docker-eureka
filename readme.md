@@ -6,7 +6,7 @@ Next steps:
 * Pull images locally once downloaded
 * Docker build on the fly
 * Add a new Application on Eureka service discovery
-* Use Mesos MArathon to orquestrate
+* Use Mesos Marathon to orquestrate
 
 Please, to execute, do ./script/test
 
