@@ -1,25 +1,33 @@
-#!/bin/bash -x
+#!/bin/bash 
+#-x to print commands
 
-[ -z "$ID" ] && export ID=001
-[ -z "$SLEEP" ] && export SLEEP=5
-[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
-[ -z "$EUREKA_ZONES" ] && export EUREKA_ZONES='a b c' 
-[ -z "$EUREKA_CNAMES" ] && export EUREKA_CNAMES='10-10-0-2.eureka.docker 10-10-0-3.eureka.docker 10-10-0-4.eureka.docker'
-[ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
+source script/bootstrap
 
-echo '**** Creating DNS service ****'
+echo "********* Start a Dnsmasq Container running on the service$ID machine"
 eval $(docker-machine env "service$ID")
 docker run -d --name 'dnsmasq.local' -p 53:53 -p 53:53/udp --cap-add=NET_BIND_SERVICE --cap-add=NET_ADMIN --cap-add=NET_RAW \
 	dnsmasq-eureka /etc/dnsmasq.conf -i eth0 -i eth1 -8 -
 	
+
+echo "********* Building and Running Eureka containers"
+cd "$WORKING_DIR"/eureka1
 any_network_=$(echo "$EUREKA_ZONES" | awk '{print $1}')
 h_=1
 for i in $EUREKA_ZONES; do
 	cname_=$(echo "$EUREKA_CNAMES"|awk '{print $'$h_'}')
-	eval $(docker-machine env "eureka${ID}$i") && \
-	docker run -d -h "$cname_" --name "$cname_" --dns=$(docker-machine ip "service$ID") --net="eureka$ID" -p "808$h_":8080 docker-eureka
-	let "h_++"
+	eval $(docker-machine env "host${ID}$i") 
+	docker ps -a | grep "eureka${ID}$i" >/dev/null
+	if [ $? -ne 0 ] ; then
+		echo "********* Building container: docker-eureka"
+		docker build -t docker-eureka . >/dev/null && \
+		docker run -d -h "$cname_" --name "$cname_" --dns=$(docker-machine ip "service$ID") --net="host$ID" -p "808$h_":8080 docker-eureka
+		let "h_++"
+	else
+		echo "eureka${ID}$i not created because already exists :)"
+		docker start "eureka${ID}$i" >/dev/null 2>/dev/null
+	fi	
 done
+
 
 #eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-3.zone-b.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
 #eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-4.zone-c.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka

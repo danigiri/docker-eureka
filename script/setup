@@ -1,45 +1,66 @@
-#!/bin/bash -x
+#!/bin/bash
+#-x to print commands
 
-#DRIVER_OPTS=${DRIVER_OPTS:-'--driver vmwarefusion --vmwarefusion-no-share --vmwarefusion-disk-size 2000 --vmwarefusion-memory-size 512'}
-DRIVER_OPTS=${DRIVER_OPTS:-'--driver virtualbox --virtualbox-no-share --virtualbox-disk-size 2000 --virtualbox-memory 1024'}
-[ -z "$ID" ] && export ID='001'
-[ -z "$SLEEP" ] && export SLEEP=1
-[ -z "$WORKING_DIR" ] && WORKING_DIR=$(pwd)
-[ -z "$DNSMASQ_DIR" ] && DNSMASQ_DIR="$WORKING_DIR/../docker-dnsmasq"
-[ -z "$EUREKA_HOSTS" ] && EUREKA_HOSTS='a b c'
-[ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
+source script/bootstrap
 
+echo -e "********* Set up the Services Host"
+echo "********* Creating a virtualbox machine called service$ID for the cluster services"
+docker-machine ls | grep "service$ID" >/dev/null
+if [ $? -ne 0 ] ; then
+	docker-machine create $DRIVER_OPTS "service$ID"
+	sleep ${SLEEP}
+else
+	echo "service$ID not created because already exists :)"
+	docker-machine start "service$ID" >/dev/null 2>/dev/null
+fi
 
-# create exhibitor + dns host
-docker-machine create $DRIVER_OPTS "service$ID"
-sleep ${SLEEP}
-eval $(docker-machine env "service$ID")
-docker $(docker-machine config "service$ID") run -d -p 8181:8181 -p 2181:2181 -p 2888:2888 -p 3888:3888 \
-	-h exhibitor.local --name exhibitor.local -e HOSTNAME=exhibitor.local mbabineau/zookeeper-exhibitor:latest
+echo "********* Start a Zookeeper Container running on the service$ID machine"
+eval $(docker-machine env service$ID)
+docker ps | grep -q "exhibitor.local"
+if [ $? -ne 0 ] ; then
+	docker $(docker-machine config "service$ID") run -d -p 8181:8181 -p 2181:2181 -p 2888:2888 -p 3888:3888 \
+	-h exhibitor.local --name exhibitor.local -e HOSTNAME=exhibitor.local mbabineau/zookeeper-exhibitor:latest >/dev/null
+
+else
+	echo "Zookeeper not created because already exists :)"
+		docker start "exhibitor.local" >/dev/null 2>/dev/null
+fi
+
 
 cd "$DNSMASQ_DIR" && \
-docker build -t danigiri/docker-dnsmasq .
+docker build -t danigiri/docker-dnsmasq . >/dev/null
 
 cd "$WORKING_DIR"/dnsmasq-eureka1 && \
-docker build -t dnsmasq-eureka .
+docker build -t dnsmasq-eureka . >/dev/null
 
 
+echo "********* Creating Hosts for Eureka and Production Nodes"
+# NUM without use yet
 # create eureka hosts, we need to start exhibitor so the network can register the hosts
 cluster_store="cluster-store=zk://$(docker-machine ip service$ID):2181"
-for i in $EUREKA_HOSTS; do
-	docker-machine create $DRIVER_OPTS \
-		--engine-opt="cluster-advertise=eth1:2376" --engine-opt="$cluster_store" \
-		"eureka${ID}${i}"
-#		echo "kill `more /var/run/udhcpc.eth1.pid`\nifconfig eth1 192.168.99.50 netmask 255.255.255.0 broadcast 192.168.99.255 up" | docker-machine ssh prova-discovery sudo tee /var/lib/boot2docker/bootsync.sh > /dev/null
-	sleep ${SLEEP}
+for i in $_HOSTS; do
+	docker-machine ls | grep "host${ID}${i}" >/dev/null
+	if [ $? -ne 0 ] ; then
+		docker-machine create $DRIVER_OPTS \
+			--engine-opt="cluster-advertise=eth1:2376" --engine-opt="$cluster_store" \
+			"host${ID}${i}" >/dev/null
+		sleep ${SLEEP}
+	else
+		echo "host${ID}${i} not created because already exists :)"
+		docker-machine start "host${ID}${i}" >/dev/null 2>/dev/null
+	fi			 
 done
 
 # create a network (name can be anything you like) from any of the hosts
-any_network_=$(echo "$EUREKA_HOSTS" | awk '{print $1}')
-eval $(docker-machine env "eureka$ID$any_network_")
-docker network create --driver overlay --subnet="$SUBNET" "eureka$ID"
+echo "********* Create the overlay networks"
+#https://docs.docker.com/engine/userguide/networking/work-with-networks/
+#https://docs.docker.com/engine/reference/commandline/network_create/
+any_network_=$(echo "$_HOSTS" | awk '{print $1}')
+eval $(docker-machine env "host$ID$any_network_")
+docker network ls | grep "host$ID" >/dev/null
+if [ $? -ne 0 ] ; then
+	docker network create --driver overlay --subnet="$SUBNET" "host$ID" >/dev/null 
+else
+	echo "Network host$ID not created because already exists :)"
+fi
 
-cd "$WORKING_DIR"/eureka1
-for i in $EUREKA_HOSTS; do
-	eval $(docker-machine env "eureka$ID$i") && docker build -t docker-eureka .
-done
