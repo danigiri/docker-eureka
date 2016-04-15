@@ -1,4 +1,5 @@
 Goal
+
 This repository aims to investigate potential deployments of Docker and Mesos over agnostic infrastructure
 
 Next steps:
@@ -10,5 +11,6 @@ Next steps:
 * Use Mesos Marathon to orquestrate
 
 Execution
+
 Please, to execute, do ./script/test
 
