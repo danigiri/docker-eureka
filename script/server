@@ -16,17 +16,31 @@ h_=1
 for i in $EUREKA_ZONES; do
 	cname_=$(echo "$EUREKA_CNAMES"|awk '{print $'$h_'}')
 	eval $(docker-machine env "host${ID}$i") 
+
 	docker ps -a | grep "eureka${ID}$i" >/dev/null
 	if [ $? -ne 0 ] ; then
 		echo "********* Building container: docker-eureka"
 		docker build -t docker-eureka . >/dev/null && \
-		docker run -d -h "$cname_" --name "$cname_" --dns=$(docker-machine ip "service$ID") --net="host$ID" -p "808$h_":8080 docker-eureka
+		docker run -d -h "$cname_" --name "$cname_" --dns=$(docker-machine ip "service$ID") --net="$NETS" -p "808$h_":8080 docker-eureka
 		let "h_++"
 	else
 		echo "eureka${ID}$i not created because already exists :)"
 		docker start "eureka${ID}$i" >/dev/null 2>/dev/null
 	fi	
 done
+echo "********* Building and Running Node containers"
+for i in $EUREKA_ZONES; do
+	eval $(docker-machine env "host${ID}$i") 
+	docker ps -a | grep "node${ID}$i" >/dev/null
+	if [ $? -ne 0 ] ; then
+		docker run -d --name="node${ID}$i" --net="${NETS}" gliderlabs/alpine sh -c "sleep 3000"
+		docker network connect "${NETP}" "node${ID}$i"
+	else
+		echo "node${ID}$i not created because already exists :)"
+		docker start "node${ID}$i" >/dev/null 2>/dev/null
+	fi	
+done
+
 
 
 #eval $(docker-machine env "eureka${ID}b") && docker run -d -h '10-10-0-3.zone-b.eureka.local' --dns=$(docker-machine ip dns$ID) --net=eureka_$ID -p 8080:8080 docker-eureka
