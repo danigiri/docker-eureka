@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Set up the VARIABLES
+cd "$WORKING_DIR"
+source script/bootstrap
+
+# Create the Hosts and the Containers for this test
+echo "====> Call Setup Script"
+cd "$WORKING_DIR"
+./script/setup
+echo
+
+# Configure Dnsmasq and Eureka servers
+echo "====> Call Server Script"
+cd "$WORKING_DIR"
+./script/server
+
+echo
+echo "====> Executing tests..."
+
+echo
+echo "********* Pinging from node${ID}a to all the Eureka and Production nodes over the $NETS network"
+echo
+h_=1
+for i in $EUREKA_ZONES; do
+	cname_=$(echo "$EUREKA_CNAMES"|awk '{print $'$h_'}')
+	eval $(docker-machine env host${ID}$i)
+	docker exec "node${ID}$i" ping -c 1 -W 15 "node${ID}$i.$NETS" | grep -E 'packets|PING'
+	docker exec "node${ID}$i" ping -c 1 -W 15 "$cname_.$NETS" | grep -E 'packets|PING'
+	let "h_++"
+done
+echo
+echo "********* Pinging from node${ID}a to all the Eureka and Production nodes over the $NETP network"
+echo
+h_=1
+for i in $EUREKA_ZONES; do
+	cname_=$(echo "$EUREKA_CNAMES"|awk '{print $'$h_'}')
+	eval $(docker-machine env host${ID}$i)
+	docker exec "node${ID}$i" ping -c 1 -W 15 "node${ID}$i.$NETP" | grep -E 'packets|PING'
+	docker exec "node${ID}$i" ping -c 1 -W 15 "$cname_.$NETP" | grep -E 'packets|PING'
+	let "h_++"
+done

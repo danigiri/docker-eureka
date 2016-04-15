@@ -1,2 +1,14 @@
-Here comes the Readme
-Idea: Explain Environment and Use Cases
+###Goal
+This repository aims to investigate potential deployments of Docker and Mesos over agnostic infrastructure
+
+###Next steps:
+* Dockercompose
+* Docker-machine optimization
+* Pull images locally once downloaded
+* Docker build on the fly
+* Add a new Application on Eureka service discovery
+* Use Mesos Marathon to orquestrate
+
+###Execution
+Please, to execute, do ./script/test
+

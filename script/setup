@@ -7,7 +7,7 @@ echo -e "********* Set up the Services Host"
 echo "********* Creating a virtualbox machine called service$ID for the cluster services"
 docker-machine ls | grep "service$ID" >/dev/null
 if [ $? -ne 0 ] ; then
-	docker-machine create $DRIVER_OPTS "service$ID"
+	docker-machine create $DRIVER_OPTS "service$ID" >/dev/null
 	sleep ${SLEEP}
 else
 	echo "service$ID not created because already exists :)"
@@ -26,7 +26,7 @@ else
 		docker start "exhibitor.local" >/dev/null 2>/dev/null
 fi
 
-
+echo "********* Building Dnsmasq container for Eureka"
 cd "$DNSMASQ_DIR" && \
 docker build -t danigiri/docker-dnsmasq . >/dev/null
 
@@ -52,15 +52,25 @@ for i in $_HOSTS; do
 done
 
 # create a network (name can be anything you like) from any of the hosts
-echo "********* Create the overlay networks"
+echo "********* Create the overlay networks for Services and Production"
 #https://docs.docker.com/engine/userguide/networking/work-with-networks/
 #https://docs.docker.com/engine/reference/commandline/network_create/
 any_network_=$(echo "$_HOSTS" | awk '{print $1}')
 eval $(docker-machine env "host$ID$any_network_")
-docker network ls | grep "host$ID" >/dev/null
+docker network ls | grep "$NETS" >/dev/null
 if [ $? -ne 0 ] ; then
-	docker network create --driver overlay --subnet="$SUBNET" "host$ID" >/dev/null 
+	docker network create --driver overlay --subnet="$SUBNET" "$NETS" >/dev/null 
 else
-	echo "Network host$ID not created because already exists :)"
+	echo "Network $NETS not created because already exists :)"
 fi
 
+docker network ls | grep "$NETP" >/dev/null
+if [ $? -ne 0 ] ; then
+	docker network create --driver overlay \
+	--subnet=192.168.2.0/24 \
+	--gateway=192.168.2.1 \
+	--ip-range=192.168.2.128/25 \
+	"$NETP" >/dev/null
+else
+	echo "$NETP not created because already exists :)"
+fi
