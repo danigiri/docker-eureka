@@ -1,8 +1,7 @@
-Goal
-
+###Goal
 This repository aims to investigate potential deployments of Docker and Mesos over agnostic infrastructure
 
-Next steps:
+###Next steps:
 * Dockercompose
 * Docker-machine optimization
 * Pull images locally once downloaded
@@ -10,7 +9,6 @@ Next steps:
 * Add a new Application on Eureka service discovery
 * Use Mesos Marathon to orquestrate
 
-Execution
-
+###Execution
 Please, to execute, do ./script/test
 
