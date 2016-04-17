@@ -1,0 +1,23 @@
+
+[ -z "$ID" ] && export ID=1
+[ -z "$SLEEP" ] && export SLEEP=1
+[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
+[ -z "$DNSMASQ_DIR" ] && DNSMASQ_DIR="$WORKING_DIR/../docker-dnsmasq"
+
+[ -z "$NUM" ] && export NUM=2 					#Number of Hosts and Nodes
+[ -z "$EUREKA_ZONES" ] && export EUREKA_ZONES='a b' 
+[ -z "$_HOSTS" ] && export _HOSTS='a b'
+[ -z "$EUREKA_CNAMES" ] && export EUREKA_CNAMES='10-10-0-2.eureka.docker 10-10-0-3.eureka.docker'
+[ -z "$SUBNET" ] && export SUBNET='10.10.0.0/29'
+
+[ -z "$NETS" ] && export NETS="net_ser"
+[ -z "$NETP" ] && export NETP="net_prod"
+
+[ -z "$DOCKER_MACHINE" ] && export DOCKER_MACHINE=docker-machine
+
+
+[ -z "$DRIVER_OPTS" ] && \
+	export DRIVER_OPTS=${DRIVER_OPTS:-'--driver virtualbox --virtualbox-no-share --virtualbox-disk-size 2000 --virtualbox-memory 1024'}
+	
+	
+. "$WORKING_DIR"/script/_fun

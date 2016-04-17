@@ -1,0 +1,78 @@
+
+
+[ -z "$DOCKER_MACHINE" ] && export DOCKER_MACHINE=docker-machine
+
+# __________________________________________________________________________________________________
+echoerr_() { printf %s\\n "$@" 1>&2; }
+
+
+# __________________________________________________________________________________________________
+startDockerHost() { # <name-of-host>
+
+	if [ $# -ne 1 ]; then
+		echoerr_ 'Need host name to start docker machine host'
+		exit 1
+	fi
+
+	m_="$1"
+	status_=$($DOCKER_MACHINE ls | grep "$m_" | awk '{print $4}')
+	echo "$status_" | grep -q 'Stopped'
+	if [ $? -eq 0 ]; then
+		$DOCKER_MACHINE ls | grep "$m_"
+		echo "Starting Docker machine host '$m_'..."
+		docker-machine start "$m_" >/dev/null
+		sleep "$SLEEP"	
+	else
+		echo "$status_" | grep -q 'Running'
+		if [ $? -eq 0 ]; then
+			echo "Docker machine host '$m_' already running"	
+		else
+			echo "Docker machine host '$m_' not started (status '$status_')"	
+		fi
+	fi
+
+}
+
+# __________________________________________________________________________________________________
+createDockerHost() { # <name-of-host>
+
+	if [ $# -ne 1 ]; then
+		echoerr_ 'Need host name to create a docker machine host'
+		exit 1
+	fi
+	
+	m_="$1"
+	$DOCKER_MACHINE ls | grep -q "$m_"
+	if [ $? -ne 0 ] ; then
+		$DOCKER_MACHINE create $DRIVER_OPTS "$m_" >/dev/null
+		sleep "$SLEEP"
+	else
+		startDockerHost "$m_"
+	fi
+
+}
+
+
+# __________________________________________________________________________________________________
+createDockerHostInOverlayNetwork() { # <host-name> <advertise> <cluster-store-store-uri>
+
+
+	if [ $# -ne 3 ]; then
+		echoerr_ "Wrong number of parameters in creating a docker machine host on an overlay ($#)"
+		exit 1
+	fi
+
+	m_="$1"
+	advertise_="$2"
+	store_uri_="$3"
+	docker-machine ls | grep "host${ID}${i}" >/dev/null
+	if [ $? -ne 0 ] ; then
+		$DOCKER_MACHINE create $DRIVER_OPTS \
+			--engine-opt="cluster-advertise=$advertise_" \
+			--engine-opt="cluster-store=$store_uri_" \
+			"host${ID}${i}" >/dev/null
+		sleep "$SLEEP"
+	else
+		startDockerHost "$m_"
+	fi		
+}

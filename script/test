@@ -1,19 +1,18 @@
 #!/bin/bash
 
 # Set up the VARIABLES
-cd "$WORKING_DIR"
-source script/bootstrap
+[ -e ./_env ] && . ./_env
+[ -e ./script/_env ] && . ./script/_env
 
 # Create the Hosts and the Containers for this test
 echo "====> Call Setup Script"
-cd "$WORKING_DIR"
-./script/setup
+
+"$WORKING_DIR"/script/setup
 echo
 
 # Configure Dnsmasq and Eureka servers
 echo "====> Call Server Script"
-cd "$WORKING_DIR"
-./script/server
+"$WORKING_DIR"/script/server
 
 echo
 echo "====> Executing tests..."

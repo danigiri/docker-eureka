@@ -1,18 +1,13 @@
 #!/bin/bash
 #-x to print commands
 
-source script/bootstrap
+[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
+
+. "$WORKING_DIR"/script/_env
 
 echo -e "********* Set up the Services Host"
 echo "********* Creating a virtualbox machine called service$ID for the cluster services"
-docker-machine ls | grep "service$ID" >/dev/null
-if [ $? -ne 0 ] ; then
-	docker-machine create $DRIVER_OPTS "service$ID" >/dev/null
-	sleep ${SLEEP}
-else
-	echo "service$ID not created because already exists :)"
-	docker-machine start "service$ID" >/dev/null 2>/dev/null
-fi
+createDockerHost "service$ID"
 
 echo "********* Start a Zookeeper Container running on the service$ID machine"
 eval $(docker-machine env service$ID)
@@ -37,18 +32,10 @@ docker build -t dnsmasq-eureka . >/dev/null
 echo "********* Creating Hosts for Eureka and Production Nodes"
 # NUM without use yet
 # create eureka hosts, we need to start exhibitor so the network can register the hosts
-cluster_store="cluster-store=zk://$(docker-machine ip service$ID):2181"
+cluster_uri_="zk://$(docker-machine ip service$ID):2181"
 for i in $_HOSTS; do
-	docker-machine ls | grep "host${ID}${i}" >/dev/null
-	if [ $? -ne 0 ] ; then
-		docker-machine create $DRIVER_OPTS \
-			--engine-opt="cluster-advertise=eth1:2376" --engine-opt="$cluster_store" \
-			"host${ID}${i}" >/dev/null
-		sleep ${SLEEP}
-	else
-		echo "host${ID}${i} not created because already exists :)"
-		docker-machine start "host${ID}${i}" >/dev/null 2>/dev/null
-	fi			 
+	host_="host${ID}${i}"
+	createDockerHostInOverlayNetwork "$host_" 'eth1:2376' "$cluster_uri_"
 done
 
 # create a network (name can be anything you like) from any of the hosts
