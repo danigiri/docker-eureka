@@ -79,6 +79,82 @@ createDockerHostInOverlayNetwork() { # <host-name> <advertise> <cluster-store-st
 		
 }
 
+# __________________________________________________________________________________________________
+dockerBuild() { # <tag> <dockerfile folder>
+
+	if [ $# -ne 2 ]; then
+		echoerr_ "Wrong number of parameters in doing a docker image build ($#)"
+		exit 1
+	fi
+
+	tag_="$1"
+	f_="$2"
+
+	docker build -q -t "$tag_" "$f_"
+
+}
+
+
+# __________________________________________________________________________________________________
+dockerBuildUsingRegistry() { # <tag> <dockerfile folder>
+
+	if [ $# -ne 2 ]; then
+		echoerr_ "Wrong number of parameters in doing a docker image build using registry ($#)"
+		exit 1
+	fi
+	
+	tag_="$1"
+	f_="$2"
+	
+	registry_tag_="$REGISTRY"/"$tag_"
+
+	if [ ! -z "$REGISTRY" ]; then
+		docker pull "$registry_tag_" 
+		if [ $? -eq 0 ]; then
+			docker tag "$registry_tag_" "$tag_"
+		fi
+	fi
+
+	docker build -q -t "$tag_" "$f_"
+
+	if [ ! -z "$REGISTRY" ]; then
+		docker tag "$tag_" "$registry_tag_"
+		docker push "$registry_tag_"
+	fi
+
+}
+
+# __________________________________________________________________________________________________
+dockerPull() {
+
+	if [ $# -ne 1 ]; then
+		echoerr_ "Wrong number of parameters in docker pull ($#)"
+		exit 1
+	fi
+
+
+	tag_="$1"
+	
+	registry_tag_="$REGISTRY"/"$tag_"
+
+	# if we have a specified registry, 
+	# 	find out if we have a local image, 
+	#	if we don't, try to pull it from the specified registry and then tag as the intended image
+	# otherwise, pull from public registry (or the logged in one)
+	if [ ! -z "$REGISTRY" ]; then
+		docker images  | awk '{print $1":"$2}' | grep -q "^$tag_"
+		if [ $? -ne 0 ]; then
+			docker pull "$registry_tag_"
+		else
+			echo "Image '$tag_' already available locally"
+		fi
+		docker tag "$tag_" "$registry_tag_"
+		docker push "$registry_tag_"
+	else 
+		docker pull "$tag_"
+	fi
+	
+}
 
 # __________________________________________________________________________________________________
 runDockerOnHost() {
@@ -89,3 +165,7 @@ runDockerOnHost() {
 	fi
 	
 }
+
+
+
+

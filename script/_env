@@ -18,6 +18,9 @@
 
 [ -z "$DRIVER_OPTS" ] && \
 	export DRIVER_OPTS=${DRIVER_OPTS:-'--driver virtualbox --virtualbox-no-share --virtualbox-disk-size 2000 --virtualbox-memory 1024'}
-	
+
+
+# export REGISTRY=$(docker-machine ip <host>):<port>
+[ ! -z "$REGISTRY" ] && export DRIVER_OPTS="$DRIVER_OPTS --engine-insecure-registry $REGISTRY"
 	
 . "$WORKING_DIR"/script/_fun

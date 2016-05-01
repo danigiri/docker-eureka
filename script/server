@@ -1,13 +1,17 @@
 #!/bin/bash 
 #-x to print commands
 
-#source script/bootstrap
+[ -z "$WORKING_DIR" ] && export WORKING_DIR=$(pwd)
+
+. "$WORKING_DIR"/script/_env
 
 echo "********* Start a Dnsmasq Container running on the service$ID machine"
 eval $(docker-machine env "service$ID")
 docker run -d --name 'dnsmasq.local' -p 53:53 -p 53:53/udp --cap-add=NET_BIND_SERVICE --cap-add=NET_ADMIN --cap-add=NET_RAW \
 	dnsmasq-eureka /etc/dnsmasq.conf -i eth0 -i eth1 -8 -
 	
+# used by eureka
+dockerPull jeanblanchard/tomcat:8
 
 echo "********* Building and Running Eureka containers"
 cd "$WORKING_DIR"/eureka1
@@ -18,7 +22,7 @@ for i in $EUREKA_ZONES; do
 	eval $(docker-machine env "host${ID}$i") 
 
 	echo "********* Building container: docker-eureka"
-	docker build -q -t docker-eureka "$WORKING_DIR"/eureka1 && \
+	dockerBuildUsingRegistry docker-eureka "$WORKING_DIR"/eureka1
 
 	docker ps -a | grep -q "eureka${ID}$i"
 	if [ $? -ne 0 ] ; then
@@ -30,6 +34,7 @@ for i in $EUREKA_ZONES; do
 	let h_++
 done
 echo "********* Building and Running Node containers"
+dockerPull gliderlabs/alpine
 for i in $EUREKA_ZONES; do
 	eval $(docker-machine env "host${ID}$i") 
 	docker ps -a | grep "node${ID}$i" >/dev/null

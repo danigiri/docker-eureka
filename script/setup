@@ -12,6 +12,8 @@ echo "********* Start a Zookeeper Container running on the service$ID machine **
 eval $(docker-machine env service$ID)
 docker ps | grep -q "exhibitor.local"
 if [ $? -ne 0 ] ; then
+	echo "********* Pulling the zookeeper image"
+	dockerPull mbabineau/zookeeper-exhibitor:latest
 	docker $(docker-machine config "service$ID") run -d -p 8181:8181 -p 2181:2181 -p 2888:2888 -p 3888:3888 \
 	-h exhibitor.local --name exhibitor.local -e HOSTNAME=exhibitor.local mbabineau/zookeeper-exhibitor:latest >/dev/null
 
@@ -19,6 +21,10 @@ else
 	echo "Zookeeper not created because already exists :)"
 		docker start "exhibitor.local" >/dev/null 2>/dev/null
 fi
+
+# used by the dnsmasq images
+echo "********* Pulling the alpine base image"
+dockerPull gliderlabs/alpine:3.3
 
 echo "********* Building Dnsmasq images for Eureka:"
 docker build -q -t danigiri/docker-dnsmasq "$DNSMASQ_DIR"

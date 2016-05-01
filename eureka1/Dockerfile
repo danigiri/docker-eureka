@@ -13,8 +13,8 @@ RUN cd /opt/tomcat/webapps && \
   wget -q http://repo1.maven.org/maven2/com/netflix/eureka/eureka-server/${EUREKA_VERSION}/eureka-server-${EUREKA_VERSION}.war && \
   jar xf eureka-server-${EUREKA_VERSION}.war && \
   rm eureka-server-${EUREKA_VERSION}.war
-RUN curl http://repo1.maven.org/maven2/com/netflix/blitz4j/blitz4j/1.36.1/blitz4j-1.36.1.jar \
-  -o /opt/tomcat/webapps/eureka/WEB-INF/lib/blitz4j-1.36.1.jar
+RUN cd /opt/tomcat/webapps/eureka/WEB-INF/lib && \
+  wget -q http://repo1.maven.org/maven2/com/netflix/blitz4j/blitz4j/1.36.1/blitz4j-1.36.1.jar
 
 ADD config.properties /opt/tomcat/webapps/eureka/WEB-INF/classes/config.properties
 ADD eureka-client-test.properties /opt/tomcat/webapps/eureka/WEB-INF/classes/eureka-client-test.properties
