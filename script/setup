@@ -5,11 +5,10 @@
 
 . "$WORKING_DIR"/script/_env
 
-echo -e "********* Set up the Services Host"
-echo "********* Creating a virtualbox machine called service$ID for the cluster services"
+echo -e "********* Set up the Services Host *********"
 createDockerHost "service$ID"
 
-echo "********* Start a Zookeeper Container running on the service$ID machine"
+echo "********* Start a Zookeeper Container running on the service$ID machine *********"
 eval $(docker-machine env service$ID)
 docker ps | grep -q "exhibitor.local"
 if [ $? -ne 0 ] ; then
@@ -21,37 +20,34 @@ else
 		docker start "exhibitor.local" >/dev/null 2>/dev/null
 fi
 
-echo "********* Building Dnsmasq container for Eureka"
-cd "$DNSMASQ_DIR" && \
-docker build -t danigiri/docker-dnsmasq . >/dev/null
-
-cd "$WORKING_DIR"/dnsmasq-eureka1 && \
-docker build -t dnsmasq-eureka . >/dev/null
+echo "********* Building Dnsmasq images for Eureka:"
+docker build -q -t danigiri/docker-dnsmasq "$DNSMASQ_DIR"
+docker build -q -t dnsmasq-eureka "$WORKING_DIR"/dnsmasq-eureka1
 
 
-echo "********* Creating Hosts for Eureka and Production Nodes"
+echo "********* Creating Hosts for Eureka and Production Nodes *********"
 # NUM without use yet
 # create eureka hosts, we need to start exhibitor so the network can register the hosts
-cluster_uri_="zk://$(docker-machine ip service$ID):2181"
+cluster_uri_='zk://'$(docker-machine ip service$ID)':2181'
 for i in $_HOSTS; do
 	host_="host${ID}${i}"
 	createDockerHostInOverlayNetwork "$host_" 'eth1:2376' "$cluster_uri_"
 done
 
 # create a network (name can be anything you like) from any of the hosts
-echo "********* Create the overlay networks for Services and Production"
+echo "********* Create the overlay networks for Services and Production *********"
 #https://docs.docker.com/engine/userguide/networking/work-with-networks/
 #https://docs.docker.com/engine/reference/commandline/network_create/
 any_network_=$(echo "$_HOSTS" | awk '{print $1}')
 eval $(docker-machine env "host$ID$any_network_")
-docker network ls | grep "$NETS" >/dev/null
+docker network ls | grep -q "$NETS"
 if [ $? -ne 0 ] ; then
 	docker network create --driver overlay --subnet="$SUBNET" "$NETS" >/dev/null 
 else
 	echo "Network $NETS not created because already exists :)"
 fi
 
-docker network ls | grep "$NETP" >/dev/null
+docker network ls | grep -q "$NETP"
 if [ $? -ne 0 ] ; then
 	docker network create --driver overlay \
 	--subnet=192.168.2.0/24 \

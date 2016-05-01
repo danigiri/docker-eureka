@@ -17,16 +17,17 @@ for i in $EUREKA_ZONES; do
 	cname_=$(echo "$EUREKA_CNAMES"|awk '{print $'$h_'}')
 	eval $(docker-machine env "host${ID}$i") 
 
-	docker ps -a | grep "eureka${ID}$i" >/dev/null
+	echo "********* Building container: docker-eureka"
+	docker build -q -t docker-eureka "$WORKING_DIR"/eureka1 && \
+
+	docker ps -a | grep -q "eureka${ID}$i"
 	if [ $? -ne 0 ] ; then
-		echo "********* Building container: docker-eureka"
-		docker build -t docker-eureka . >/dev/null && \
 		docker run -d -h "$cname_" --name "$cname_" --dns=$(docker-machine ip "service$ID") --net="$NETS" -p "808$h_":8080 docker-eureka
-		let "h_++"
 	else
 		echo "eureka${ID}$i not created because already exists :)"
 		docker start "eureka${ID}$i" >/dev/null 2>/dev/null
 	fi	
+	let h_++
 done
 echo "********* Building and Running Node containers"
 for i in $EUREKA_ZONES; do

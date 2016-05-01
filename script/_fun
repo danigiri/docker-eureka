@@ -27,11 +27,12 @@ startDockerHost() { # <name-of-host>
 		if [ $? -eq 0 ]; then
 			echo "Docker machine host '$m_' already running"	
 		else
-			echo "Docker machine host '$m_' not started (status '$status_')"	
+			echo "Docker machine host '$m_' was not started by this script (status '$status_')"	
 		fi
 	fi
 
 }
+
 
 # __________________________________________________________________________________________________
 createDockerHost() { # <name-of-host>
@@ -44,6 +45,7 @@ createDockerHost() { # <name-of-host>
 	m_="$1"
 	$DOCKER_MACHINE ls | grep -q "$m_"
 	if [ $? -ne 0 ] ; then
+		echo "Creating Docker host '$m_'..."
 		$DOCKER_MACHINE create $DRIVER_OPTS "$m_" >/dev/null
 		sleep "$SLEEP"
 	else
@@ -55,7 +57,6 @@ createDockerHost() { # <name-of-host>
 
 # __________________________________________________________________________________________________
 createDockerHostInOverlayNetwork() { # <host-name> <advertise> <cluster-store-store-uri>
-
 
 	if [ $# -ne 3 ]; then
 		echoerr_ "Wrong number of parameters in creating a docker machine host on an overlay ($#)"
@@ -74,5 +75,17 @@ createDockerHostInOverlayNetwork() { # <host-name> <advertise> <cluster-store-st
 		sleep "$SLEEP"
 	else
 		startDockerHost "$m_"
-	fi		
+	fi	
+		
+}
+
+
+# __________________________________________________________________________________________________
+runDockerOnHost() {
+
+	if [$# -lt 2 ]; then
+		echoerr_ 'Need a specific host name and image name to run a container on a host'
+		exit 1	
+	fi
+	
 }
